@@ -1444,7 +1444,6 @@ function wcmolpay_gateway_load() {
                 'ocbc' => 'fpx_ocbc',
                 'scb' => 'fpx_scb',
                 'uob' => 'fpx_uob',
-                'TNG-EWALLET' => 'TNG_EWALLET',
                 'cimb-ebpg' => 'cimb_ebpg',
                 'pbb-cybs' => 'pbb_cybs'
             );
@@ -1457,12 +1456,12 @@ function wcmolpay_gateway_load() {
             if(!in_array($getStatus,array('processing','completed'))) {
                 $order->add_order_note('Fiuu Payment Status: '.$M_status.'<br>Transaction ID: ' . $tranID . $referer);
                 if ($MOLPay_status == "00") {
-                    $order->payment_complete();
+                    $order->payment_complete($tranID);
                 } else {
                     $order->update_status($W_status, sprintf(__('Payment %s via Fiuu.', 'woocommerce'), $tranID ) );
                 }
                 if ($this->payment_title == 'yes') {
-                    $paytitle = $this->form_fields[strtolower($channel)]['title'];
+                    $paytitle = $this->form_fields[$channel]['title'];
                     $order->set_payment_method_title($paytitle);
                     $order->save();
                 }
@@ -1605,6 +1604,15 @@ function wcmolpay_gateway_load() {
             $callback_amount = wc_format_decimal($response_amount, 2);
             $order_currency = strtoupper($order->get_currency());
             $callback_currency = strtoupper($response_currency);
+            
+            $aliases = array(
+                'RM'  => 'MYR',
+                'S$'  => 'SGD',
+                'RP'  => 'IDR',
+            );
+            if (isset($aliases[$callback_currency])) {
+                $callback_currency = $aliases[$callback_currency];
+            }
 
             $mismatched_fields = array();
             if ($order_amount !== $callback_amount) {
